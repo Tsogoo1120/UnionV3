@@ -1,0 +1,15 @@
+{
+    "files.exclude": {
+        "**/dist": true,
+        "**/.cursur": true,
+        "**/cursur": true,
+        "**/vscode": true,
+        "**/C:\\Users\\Administrator\\OneDrive\\Desktop\\TwinUnion\\.cursor": true,
+        "**/.cursor": true,
+        "**/.vscode": true,
+        "**/union-vue\\node_modules": true,
+        "**/union-vue\\README.md": true,
+        "**/README.mn": true,
+        "**/union-vue\\.gitignore": true
+    }
+}
