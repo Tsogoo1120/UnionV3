@@ -1,0 +1,65 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase.js'
+import { useSidebar } from '@/composables/useSidebar.js'
+import AdminSidebar from '@/components/admin/AdminSidebar.vue'
+import AdminHead from '@/components/admin/AdminHead.vue'
+import AdminOverview from '@/components/admin/AdminOverview.vue'
+import AdminSchedule from '@/components/admin/AdminSchedule.vue'
+import AdminPayments from '@/components/admin/AdminPayments.vue'
+import AdminVideos from '@/components/admin/AdminVideos.vue'
+import AdminTests from '@/components/admin/AdminTests.vue'
+import AdminCommunity from '@/components/admin/AdminCommunity.vue'
+
+const emit = defineEmits(['nav'])
+
+const view = ref('overview')
+const pending = ref(0)
+const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar()
+
+async function loadPending() {
+  const { count } = await supabase
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  pending.value = count ?? 0
+}
+
+onMounted(loadPending)
+
+const heads = {
+  overview: ['Overview', 'A calm command center for your practice.'],
+  schedule: ['Schedule', 'Set availability and manage one-on-one sessions.'],
+  payments: ['Payments', 'Verify receipts and approve enrollments.'],
+  videos: ['Видео хичээлүүд', 'Хичээл нэмэх, засварлах, нийтлэх.'],
+  tests: ['Сэтгэл зүйн тестүүд', 'Тест нэмэх, асуулт засварлах, нийтлэх.'],
+  community: ['Community', 'Moderate posts and comments from members.'],
+}
+</script>
+
+<template>
+  <div class="flex" style="min-height: 100vh; background: var(--surface)">
+    <div v-if="sidebarOpen" class="sidebar-backdrop" @click="closeSidebar" />
+    <AdminSidebar
+      :view="view"
+      :pending="pending"
+      :open="sidebarOpen"
+      @set-view="view = $event"
+      @nav="emit('nav', $event)"
+      @close="closeSidebar"
+    />
+    <div class="flex flex-col" style="flex: 1; min-width: 0">
+      <AdminHead
+        :title="heads[view]?.[0] ?? ''"
+        :sub="heads[view]?.[1] ?? ''"
+        @menu="toggleSidebar"
+      />
+      <AdminOverview v-if="view === 'overview'" :pending="pending" @set-view="view = $event" />
+      <AdminSchedule v-else-if="view === 'schedule'" />
+      <AdminPayments v-else-if="view === 'payments'" />
+      <AdminVideos v-else-if="view === 'videos'" />
+      <AdminTests v-else-if="view === 'tests'" />
+      <AdminCommunity v-else-if="view === 'community'" />
+    </div>
+  </div>
+</template>
