@@ -75,6 +75,25 @@ export function getThumbnailUrl(path) {
   return data?.publicUrl ?? null
 }
 
+export async function uploadIntroVideoToStorage(file) {
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+    return { error: 'Зөвхөн MP4 эсвэл WebM видео сонгоно уу.' }
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4'
+  const path = `intro/commercial.${ext}`
+  const { error } = await supabase.storage
+    .from('media-public')
+    .upload(path, file, { contentType: file.type, upsert: true })
+  if (error) return { error: error.message }
+  return { path }
+}
+
+export function getIntroVideoPublicUrl(path) {
+  if (!path) return null
+  const { data } = supabase.storage.from('media-public').getPublicUrl(path)
+  return data?.publicUrl ?? null
+}
+
 export function getPresignDownloadUrl(lessonId, sessionToken, aspect = 'desktop') {
   return fetch(
     `${SERVER_URL}/api/r2/presign-download?lessonId=${lessonId}&aspect=${aspect}`,

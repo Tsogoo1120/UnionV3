@@ -1,8 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { calDays, calSlots } from '@/data/booking-calendar.js'
+import { ref, computed, watch, onMounted } from 'vue'
+import { calDays } from '@/data/booking-calendar.js'
 import UiIcon from '@/components/common/UiIcon.vue'
 import UiAvatar from '@/components/common/UiAvatar.vue'
+import { supabase } from '@/lib/supabase.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -10,9 +11,33 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const step = ref(0)
-const bookDate = ref(calDays[1])
+const bookDate = ref(null)
 const bookSlot = ref(null)
 const topic = ref('')
+const availMap = ref({}) // { Mon: [9,17], ... }
+
+async function loadAvailability() {
+  const { data } = await supabase.from('mentor_availability').select('day, start_hour, end_hour')
+  const m = {}
+  if (data) for (const row of data) m[row.day] = [row.start_hour, row.end_hour]
+  availMap.value = m
+}
+
+const availDays = computed(() =>
+  calDays.filter((d) => availMap.value[d.d])
+)
+
+const currentSlots = computed(() => {
+  if (!bookDate.value) return []
+  const w = availMap.value[bookDate.value.d]
+  if (!w) return []
+  const slots = []
+  for (let h = w[0]; h < w[1]; h++) {
+    slots.push(`${String(h).padStart(2, '0')}:00`)
+    slots.push(`${String(h).padStart(2, '0')}:30`)
+  }
+  return slots
+})
 
 watch(
   () => props.open,
@@ -20,11 +45,13 @@ watch(
     if (v) {
       step.value = 0
       bookSlot.value = null
-      bookDate.value = calDays.find((d) => !d.unavail) ?? calDays[0]
+      bookDate.value = availDays.value[0] ?? calDays.find((d) => !d.unavail) ?? calDays[0]
       topic.value = ''
     }
   },
 )
+
+onMounted(loadAvailability)
 
 function confirmBooking() {
   if (!bookDate.value || !bookSlot.value) return
@@ -65,9 +92,9 @@ function confirmBooking() {
 
       <div v-if="step < 2" style="padding: 26px">
         <div class="kicker cool" style="margin-bottom: 14px">Өдөр сонгох</div>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 26px">
+        <div v-if="availDays.length" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 26px">
           <button
-            v-for="day in calDays.filter((d) => !d.unavail)"
+            v-for="day in availDays"
             :key="day.n"
             type="button"
             class="daycell"
@@ -76,16 +103,17 @@ function confirmBooking() {
               background: bookDate?.n === day.n ? 'var(--primary-tint)' : 'var(--card)',
               color: bookDate?.n === day.n ? 'var(--primary-deep)' : 'var(--ink)',
             }"
-            @click="bookDate = day"
+            @click="bookDate = day; bookSlot = null"
           >
             <span style="font-size: 12px; font-weight: 600; opacity: 0.7">{{ day.d }}</span>
             <span style="font-size: 21px; font-family: var(--serif); font-weight: 600">{{ day.n }}</span>
           </button>
         </div>
+        <p v-else class="muted" style="font-size: 14px; margin-bottom: 26px">Одоогоор боломжит цаг байхгүй байна.</p>
         <div class="kicker cool" style="margin-bottom: 14px">Боломжит цаг</div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px" class="slot-grid">
+        <div v-if="currentSlots.length" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px" class="slot-grid">
           <button
-            v-for="s in calSlots"
+            v-for="s in currentSlots"
             :key="s"
             type="button"
             class="slotcell"
@@ -99,6 +127,7 @@ function confirmBooking() {
             {{ s }}
           </button>
         </div>
+        <p v-else-if="bookDate" class="muted" style="font-size: 14px">Энэ өдөрт боломжит цаг байхгүй.</p>
         <div class="field" style="margin-top: 22px">
           <label
             >What would you like to focus on?

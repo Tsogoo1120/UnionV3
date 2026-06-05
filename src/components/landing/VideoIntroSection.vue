@@ -1,9 +1,22 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { introVideo } from '@/data/union.js'
 import UiIcon from '@/components/common/UiIcon.vue'
-import commercialVideo from '../../../imgs.video/commercial.mp4'
+import { supabase } from '@/lib/supabase.js'
+import { getIntroVideoPublicUrl } from '@/lib/videoUpload.js'
 
 const emit = defineEmits(['nav'])
+
+const commercialVideo = ref(null)
+
+onMounted(async () => {
+  const { data } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'intro_video_path')
+    .maybeSingle()
+  if (data?.value) commercialVideo.value = getIntroVideoPublicUrl(data.value)
+})
 
 function goEnrollSubscription() {
   sessionStorage.setItem(

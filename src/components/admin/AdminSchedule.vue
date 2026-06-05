@@ -1,6 +1,7 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import UiIcon from '@/components/common/UiIcon.vue'
+import { supabase } from '@/lib/supabase.js'
 
 const avail = ref(true)
 const appts = []
@@ -17,6 +18,13 @@ const modalDay = ref('Mon')
 const modalStart = ref(9)
 const modalEnd = ref(17)
 
+async function loadAvailability() {
+  const { data } = await supabase.from('mentor_availability').select('day, start_hour, end_hour')
+  if (data) {
+    for (const row of data) windows[row.day] = [row.start_hour, row.end_hour]
+  }
+}
+
 function openModal() {
   modalDay.value = 'Mon'
   modalStart.value = 9
@@ -24,15 +32,23 @@ function openModal() {
   showSetAvail.value = true
 }
 
-function saveAvail() {
+async function saveAvail() {
   if (modalEnd.value <= modalStart.value) return
   windows[modalDay.value] = [modalStart.value, modalEnd.value]
   showSetAvail.value = false
+  await supabase.from('mentor_availability').upsert({
+    day: modalDay.value,
+    start_hour: modalStart.value,
+    end_hour: modalEnd.value,
+  })
 }
 
-function clearAvail(day) {
+async function clearAvail(day) {
   delete windows[day]
+  await supabase.from('mentor_availability').delete().eq('day', day)
 }
+
+onMounted(loadAvailability)
 
 const dayOf = (a) => a.date.split(' ')[0]
 const startH = (a) => parseInt(a.time.split(':')[0]) + (a.time.split(':')[1] === '30' ? 0.5 : 0)

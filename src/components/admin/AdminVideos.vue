@@ -8,10 +8,70 @@ import {
   uploadVideoToR2,
   readVideoDuration,
   getThumbnailUrl,
+  uploadIntroVideoToStorage,
+  getIntroVideoPublicUrl,
 } from '@/lib/videoUpload.js'
 
 const { session } = useAuth()
 
+// --- intro video ---
+const introVideoPath = ref(null)
+const introVideoFile = ref(null)
+const introVideoPreview = ref(null)
+const introSaving = ref(false)
+const introError = ref('')
+const introStatus = ref('')
+
+const introVideoUrl = computed(() => {
+  if (introVideoPreview.value) return introVideoPreview.value
+  return getIntroVideoPublicUrl(introVideoPath.value)
+})
+
+async function loadIntroVideo() {
+  const { data } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'intro_video_path')
+    .maybeSingle()
+  introVideoPath.value = data?.value ?? null
+}
+
+function onIntroVideoChange(e) {
+  const f = e.target.files?.[0]
+  if (!f) return
+  introVideoFile.value = f
+  if (introVideoPreview.value) URL.revokeObjectURL(introVideoPreview.value)
+  introVideoPreview.value = URL.createObjectURL(f)
+}
+
+async function saveIntroVideo() {
+  if (!introVideoFile.value) return
+  introSaving.value = true
+  introError.value = ''
+  introStatus.value = 'Видео байршуулж байна…'
+  const r = await uploadIntroVideoToStorage(introVideoFile.value)
+  if (r.error) {
+    introError.value = r.error
+    introSaving.value = false
+    introStatus.value = ''
+    return
+  }
+  introStatus.value = 'Тохиргоо хадгалж байна…'
+  const { error: dbErr } = await supabase
+    .from('site_settings')
+    .upsert({ key: 'intro_video_path', value: r.path, updated_at: new Date().toISOString() })
+  if (dbErr) {
+    introError.value = dbErr.message
+  } else {
+    introVideoPath.value = r.path
+    introVideoFile.value = null
+    if (introVideoPreview.value) { URL.revokeObjectURL(introVideoPreview.value); introVideoPreview.value = null }
+  }
+  introSaving.value = false
+  introStatus.value = ''
+}
+
+// --- lessons ---
 const list = ref([])
 const loading = ref(true)
 const showForm = ref(false)
@@ -236,12 +296,62 @@ function keyBasename(key) {
   return key.split('/').pop() ?? key
 }
 
-onMounted(load)
+onMounted(() => { load(); loadIntroVideo() })
 </script>
 
 <template>
   <div class="scroll-y" style="flex: 1; height: calc(100vh - 72px); overflow-y: auto">
     <div class="page-inset">
+      <!-- landing intro video -->
+      <div class="card card-pad" style="border-radius: 16px; margin-bottom: 28px">
+        <h3 style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px">
+          <UiIcon name="video" :size="18" style="opacity: 0.6" /> Нүүр хуудасны танилцуулга видео
+        </h3>
+        <div class="flex items-start" style="gap: 16px; flex-wrap: wrap">
+          <div style="flex-shrink: 0">
+            <video
+              v-if="introVideoUrl"
+              :src="introVideoUrl"
+              style="width: 220px; aspect-ratio: 16/9; border-radius: 10px; background: #0c1d25; object-fit: cover; display: block"
+              muted
+              preload="metadata"
+            />
+            <div
+              v-else
+              style="width: 220px; aspect-ratio: 16/9; border-radius: 10px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; opacity: 0.4"
+            >
+              <UiIcon name="video" :size="32" />
+            </div>
+          </div>
+          <div style="flex: 1; min-width: 220px">
+            <p class="muted" style="font-size: 13px; margin-bottom: 10px">
+              Нүүр хуудасны "Танилцуулга" хэсэгт тавигдах видео. Нийтэд харагдана.
+            </p>
+            <input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              class="input"
+              style="padding: 6px; margin-bottom: 8px"
+              @change="onIntroVideoChange"
+            />
+            <p v-if="introVideoFile" class="muted" style="font-size: 12px; margin-bottom: 10px">
+              Сонгосон: {{ introVideoFile.name }} ({{ (introVideoFile.size / 1024 / 1024).toFixed(1) }} MB)
+            </p>
+            <div v-if="introStatus" style="font-size: 13px; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px">
+              <UiIcon name="clock" :size="14" style="opacity: 0.6" /> {{ introStatus }}
+            </div>
+            <div v-if="introError" style="color: var(--bad); font-size: 13px; margin-bottom: 8px">{{ introError }}</div>
+            <button
+              class="btn btn-primary btn-sm"
+              :disabled="!introVideoFile || introSaving"
+              @click="saveIntroVideo"
+            >
+              {{ introSaving ? 'Хадгалж байна…' : 'Хадгалах' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- header -->
       <div class="flex items-center justify-between" style="margin-bottom: 24px">
         <div>
