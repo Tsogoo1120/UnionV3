@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd union-vue && npm install && npm run build",
+  "outputDirectory": "union-vue/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
