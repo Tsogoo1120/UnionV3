@@ -14,7 +14,7 @@ import BookingModal from '@/components/landing/BookingModal.vue'
 
 const emit = defineEmits(['nav'])
 
-const { session, profile, loading } = useAuth()
+const { session, profile, loading, signOut } = useAuth()
 
 watchEffect(() => {
   if (loading.value) return
@@ -29,16 +29,35 @@ const view = ref('dashboard')
 const booking = ref(false)
 const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar()
 
-const titles = {
-  dashboard: ['Good afternoon, Avery', 'Day 12 of your growth challenge — keep the thread going.'],
+const userName = computed(() => {
+  const name = profile.value?.full_name ?? session.value?.user?.user_metadata?.full_name ?? session.value?.user?.user_metadata?.name ?? ''
+  return name || 'Student'
+})
+
+const firstName = computed(() => userName.value.split(' ')[0])
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+const titles = computed(() => ({
+  dashboard: [`${greeting()}, ${firstName.value}`, 'Welcome back to your learning journey.'],
   learn: ['Continue learning', null],
   assess: ['Assessments', 'Honest mirrors for where you are right now.'],
   challenge: ['31-Day Growth Challenge', 'A daily practice in becoming.'],
   sessions: ['My sessions', 'One-on-one mentorship and consultations.'],
   community: ['Community', 'Share your journey and support others — vlog-style.'],
+}))
+const title = computed(() => (titles.value[view.value] || ['', null])[0])
+const sub = computed(() => (titles.value[view.value] || ['', null])[1])
+
+async function handleLogout() {
+  await signOut()
+  emit('nav', 'login')
 }
-const title = computed(() => (titles[view.value] || ['', null])[0])
-const sub = computed(() => (titles[view.value] || ['', null])[1])
 </script>
 
 <template>
@@ -47,9 +66,11 @@ const sub = computed(() => (titles[view.value] || ['', null])[1])
     <StudentSidebar
       :view="view"
       :open="sidebarOpen"
+      :user-name="userName"
       @set-view="view = $event"
       @nav="emit('nav', $event)"
       @close="closeSidebar"
+      @logout="handleLogout"
     />
     <div class="flex flex-col" style="flex: 1; min-width: 0">
       <LearnView v-if="view === 'learn'" @set-view="view = $event" @menu="toggleSidebar" />

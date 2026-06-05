@@ -4,13 +4,8 @@ import UiAvatar from '@/components/common/UiAvatar.vue'
 
 const emit = defineEmits(['book'])
 
-const upcoming = [
-  { name: 'Dr. Maren Halvorsen', topic: 'Career crossroads', date: 'Tomorrow', time: '09:00', dur: 45, color: 'var(--primary)' },
-]
-const past = [
-  { name: 'Dr. Maren Halvorsen', topic: 'Intro consultation', date: 'May 18', time: '14:00', dur: 30, color: 'var(--primary)', note: 'Mapped your three recurring loops.' },
-  { name: 'Dr. Maren Halvorsen', topic: 'Values & direction', date: 'May 4', time: '10:30', dur: 45, color: 'var(--primary)', note: 'Clarified what “meaningful work” means to you.' },
-]
+const upcoming = []
+const past = []
 </script>
 
 <template>
@@ -53,6 +48,7 @@ const past = [
             <button class="btn btn-blue btn-sm"><UiIcon name="video" :size="16" /> Join</button>
           </div>
         </div>
+        <div v-if="!upcoming.length" class="muted" style="font-size: 14px; padding: 8px 0">No upcoming sessions. Book one above.</div>
       </div>
 
       <h3 style="font-size: 17px; margin-bottom: 14px">Past sessions</h3>
@@ -78,6 +74,7 @@ const past = [
           </div>
           <button class="btn btn-quiet btn-sm" style="align-self: flex-start">View notes</button>
         </div>
+        <div v-if="!past.length" class="muted" style="font-size: 14px; padding: 8px 0">No past sessions yet.</div>
       </div>
     </div>
   </div>

@@ -13,16 +13,10 @@ const c = courses[0]
 const current = computed(() => c.modules.flatMap((m) => m.lessons).find((l) => l.current))
 
 const stats = [
-  { icon: 'flame', hue: 'var(--clay)', tint: 'var(--clay-tint)', label: 'Day streak', value: 12 },
-  { icon: 'video', hue: 'var(--primary-deep)', tint: 'var(--primary-tint)', label: 'Lessons done', value: 8 },
-  { icon: 'compass', hue: 'var(--sage-deep)', tint: 'var(--sage-tint)', label: 'Tests taken', value: 2 },
-  { icon: 'calendar', hue: 'var(--gold)', tint: 'var(--gold-tint)', label: 'Sessions', value: 1 },
-]
-
-const todayTasks = [
-  ["5-min grounding breath", true],
-  ["Today's lesson", true],
-  ["Reflection entry", false],
+  { icon: 'flame', hue: 'var(--clay)', tint: 'var(--clay-tint)', label: 'Day streak', value: 0 },
+  { icon: 'video', hue: 'var(--primary-deep)', tint: 'var(--primary-tint)', label: 'Lessons done', value: 0 },
+  { icon: 'compass', hue: 'var(--sage-deep)', tint: 'var(--sage-tint)', label: 'Tests taken', value: 0 },
+  { icon: 'calendar', hue: 'var(--gold)', tint: 'var(--gold-tint)', label: 'Sessions', value: 0 },
 ]
 
 const recentJourneys = ref([])
@@ -122,20 +116,10 @@ onMounted(async () => {
         <!-- Next session -->
         <div class="card card-pad rise d3" style="border-radius: 16px">
           <h3 style="font-size: 17px; margin-bottom: 16px">Upcoming session</h3>
-          <div style="background: var(--surface-2); border-radius: 12px; padding: 16px; margin-bottom: 14px">
-            <div class="flex items-center" style="gap: 12px; margin-bottom: 12px">
-              <UiAvatar name="Maren Halvorsen" color="var(--primary)" :size="42" />
-              <div>
-                <div style="font-weight: 600; font-size: 14.5px">Dr. Maren H.</div>
-                <div class="muted" style="font-size: 12.5px">Career crossroads</div>
-              </div>
-            </div>
-            <div class="flex items-center" style="gap: 16px; font-size: 13px; color: var(--ink-soft)">
-              <span class="flex items-center" style="gap: 6px"><UiIcon name="calendar" :size="15" /> Tomorrow</span>
-              <span class="flex items-center" style="gap: 6px"><UiIcon name="clock" :size="15" /> 09:00 · 45m</span>
-            </div>
-          </div>
-          <button class="btn btn-ghost btn-block btn-sm" @click="emit('book')">Reschedule</button>
+          <div class="muted" style="font-size: 14px; padding: 12px 0">No sessions booked yet.</div>
+          <button class="btn btn-primary btn-block btn-sm" @click="emit('book')">
+            <UiIcon name="calendar" :size="15" /> Book a session
+          </button>
         </div>
       </div>
 

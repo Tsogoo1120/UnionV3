@@ -6,8 +6,9 @@ import UiAvatar from '@/components/common/UiAvatar.vue'
 defineProps({
   view: { type: String, required: true },
   open: { type: Boolean, default: false },
+  userName: { type: String, default: 'Student' },
 })
-const emit = defineEmits(['set-view', 'nav', 'close'])
+const emit = defineEmits(['set-view', 'nav', 'close', 'logout'])
 
 const items = [
   ['dashboard', 'home', 'Dashboard'],
@@ -78,13 +79,13 @@ function pick(id) {
     <div style="padding: 14px; border-top: 1px solid var(--line)">
       <div class="flex items-center justify-between" style="padding: 6px 8px">
         <div class="flex items-center" style="gap: 12px">
-          <UiAvatar name="Avery Quinn" color="var(--clay)" :size="38" />
+          <UiAvatar :name="userName" color="var(--clay)" :size="38" />
           <div>
-            <div style="font-weight: 600; font-size: 14px">Avery Quinn</div>
-            <div class="muted" style="font-size: 12px">Foundations · Day 12</div>
+            <div style="font-weight: 600; font-size: 14px">{{ userName }}</div>
+            <div class="muted" style="font-size: 12px">Student</div>
           </div>
         </div>
-        <button class="btn btn-quiet" style="padding: 7px" title="Sign out" @click="emit('nav', 'landing')">
+        <button class="btn btn-quiet" style="padding: 7px" title="Sign out" @click="emit('logout')">
           <UiIcon name="logout" :size="18" />
         </button>
       </div>

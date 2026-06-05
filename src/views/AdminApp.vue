@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useSidebar } from '@/composables/useSidebar.js'
+import { useAuth } from '@/composables/useAuth.js'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
 import AdminHead from '@/components/admin/AdminHead.vue'
 import AdminOverview from '@/components/admin/AdminOverview.vue'
@@ -13,9 +14,21 @@ import AdminCommunity from '@/components/admin/AdminCommunity.vue'
 
 const emit = defineEmits(['nav'])
 
+const { session, profile, signOut } = useAuth()
+
+const userName = computed(() => {
+  const name = profile.value?.full_name ?? session.value?.user?.user_metadata?.full_name ?? session.value?.user?.user_metadata?.name ?? ''
+  return name || 'Admin'
+})
+
 const view = ref('overview')
 const pending = ref(0)
 const { open: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar()
+
+async function handleLogout() {
+  await signOut()
+  emit('nav', 'login')
+}
 
 async function loadPending() {
   const { count } = await supabase
@@ -44,9 +57,11 @@ const heads = {
       :view="view"
       :pending="pending"
       :open="sidebarOpen"
+      :user-name="userName"
       @set-view="view = $event"
       @nav="emit('nav', $event)"
       @close="closeSidebar"
+      @logout="handleLogout"
     />
     <div class="flex flex-col" style="flex: 1; min-width: 0">
       <AdminHead

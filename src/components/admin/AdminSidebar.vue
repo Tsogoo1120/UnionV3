@@ -7,8 +7,9 @@ defineProps({
   view: { type: String, required: true },
   pending: { type: Number, default: 0 },
   open: { type: Boolean, default: false },
+  userName: { type: String, default: 'Admin' },
 })
-const emit = defineEmits(['set-view', 'nav', 'close'])
+const emit = defineEmits(['set-view', 'nav', 'close', 'logout'])
 
 const items = [
   ['overview', 'grid', 'Overview'],
@@ -65,16 +66,16 @@ function pick(id) {
     <div style="padding: 14px; border-top: 1px solid rgba(255, 255, 255, 0.1)">
       <div class="flex items-center justify-between" style="padding: 6px 8px">
         <div class="flex items-center" style="gap: 12px">
-          <UiAvatar name="Maren Halvorsen" color="var(--clay)" :size="36" />
+          <UiAvatar :name="userName" color="var(--clay)" :size="36" />
           <div>
-            <div style="font-weight: 600; font-size: 13.5px; color: #fff">Dr. Maren H.</div>
+            <div style="font-weight: 600; font-size: 13.5px; color: #fff">{{ userName }}</div>
             <div style="font-size: 11.5px; color: rgba(255, 255, 255, 0.5)">Administrator</div>
           </div>
         </div>
         <button
-          title="Exit"
+          title="Sign out"
           style="background: none; border: none; color: rgba(255, 255, 255, 0.6); cursor: pointer; padding: 6px"
-          @click="emit('nav', 'landing')"
+          @click="emit('logout')"
         >
           <UiIcon name="logout" :size="18" />
         </button>
