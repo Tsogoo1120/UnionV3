@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx vite *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(awk '{gsub\\(/.*\\\\//, \" — \"\\); print}')"
     ]
   }
 }
