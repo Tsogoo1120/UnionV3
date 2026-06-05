@@ -1,11 +1,55 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabase.js'
+import { useAuth } from '@/composables/useAuth.js'
 import UiIcon from '@/components/common/UiIcon.vue'
 import UiAvatar from '@/components/common/UiAvatar.vue'
 
 const emit = defineEmits(['book'])
+const { session } = useAuth()
 
-const upcoming = []
-const past = []
+const upcoming = ref([])
+const past = ref([])
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+function serviceLabel(type) {
+  return type === 'tarot_reading' ? 'Тарот уншлага' : '1:1 Coaching'
+}
+
+onMounted(async () => {
+  if (!session.value) return
+  const now = new Date().toISOString()
+  const { data } = await supabase
+    .from('coaching_slots')
+    .select('id, start_at, end_at, status, service_type, description')
+    .eq('user_id', session.value.user.id)
+    .order('start_at', { ascending: true })
+  if (!data) return
+  upcoming.value = data
+    .filter((s) => s.start_at >= now)
+    .map((s) => ({
+      id: s.id,
+      date: fmtDate(s.start_at),
+      time: fmtTime(s.start_at),
+      topic: serviceLabel(s.service_type),
+      name: 'Dr. Maren',
+      dur: Math.round((new Date(s.end_at) - new Date(s.start_at)) / 60000),
+    }))
+  past.value = data
+    .filter((s) => s.start_at < now)
+    .map((s) => ({
+      id: s.id,
+      date: fmtDate(s.start_at),
+      time: fmtTime(s.start_at),
+      topic: serviceLabel(s.service_type),
+      note: s.description || '—',
+    }))
+})
 </script>
 
 <template>

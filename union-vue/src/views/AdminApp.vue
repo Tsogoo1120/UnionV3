@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import { useSidebar } from '@/composables/useSidebar.js'
 import { useAuth } from '@/composables/useAuth.js'
@@ -39,6 +39,7 @@ async function loadPending() {
 }
 
 onMounted(loadPending)
+watch(view, loadPending)
 
 const heads = {
   overview: ['Overview', 'A calm command center for your practice.'],

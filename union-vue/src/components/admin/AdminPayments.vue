@@ -16,6 +16,8 @@ const actError = ref('')
 
 const DURATION_DAYS = 30
 
+const SERVICE_NAMES = { subscription: 'Subscription', tarot: 'Тарот уншлага', coaching: '1:1 Coaching' }
+
 const stat = {
   pending: { c: 'warn', t: 'Хүлээгдэж байна' },
   approved: { c: 'good', t: 'Батлагдсан' },
@@ -75,7 +77,7 @@ const enrollmentRows = computed(() => {
   const p = sel.value
   const profile = p.profiles
   return [
-    ['Үйлчилгээ', 'Subscription'],
+    ['Үйлчилгээ', SERVICE_NAMES[p.service_type] || p.service_type || '—'],
     ['Дүн', fmtMNT(p.amount)],
     ['Лавлагаа', p.bank_reference || '—'],
     ['Илгээсэн', fmtDate(p.created_at)],

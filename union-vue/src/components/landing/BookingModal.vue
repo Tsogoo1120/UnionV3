@@ -4,16 +4,20 @@ import { calDays } from '@/data/booking-calendar.js'
 import UiIcon from '@/components/common/UiIcon.vue'
 import UiAvatar from '@/components/common/UiAvatar.vue'
 import { supabase } from '@/lib/supabase.js'
+import { useAuth } from '@/composables/useAuth.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
 
+const { session } = useAuth()
+
 const step = ref(0)
 const bookDate = ref(null)
 const bookSlot = ref(null)
 const topic = ref('')
+const bookingErr = ref('')
 const availMap = ref({}) // { Mon: [9,17], ... }
 
 async function loadAvailability() {
@@ -45,16 +49,44 @@ watch(
     if (v) {
       step.value = 0
       bookSlot.value = null
+      bookingErr.value = ''
       bookDate.value = availDays.value[0] ?? calDays.find((d) => !d.unavail) ?? calDays[0]
       topic.value = ''
     }
   },
 )
 
+// Update default selected date once availability loads after modal is already open
+watch(availDays, (days) => {
+  if (days.length && !bookDate.value) bookDate.value = days[0]
+})
+
 onMounted(loadAvailability)
 
-function confirmBooking() {
+async function confirmBooking() {
   if (!bookDate.value || !bookSlot.value) return
+  bookingErr.value = ''
+
+  const userId = session.value?.user?.id
+  if (userId && bookDate.value.iso) {
+    const [h, m] = bookSlot.value.split(':').map(Number)
+    const start = new Date(bookDate.value.iso)
+    start.setHours(h, m, 0, 0)
+    const end = new Date(start.getTime() + 30 * 60 * 1000)
+    const { error } = await supabase.from('coaching_slots').insert({
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
+      status: 'pending',
+      service_type: 'coaching',
+      user_id: userId,
+      description: topic.value || null,
+    })
+    if (error) {
+      bookingErr.value = 'Захиалга хадгалахад алдаа гарлаа. Дахин оролдоно уу.'
+      return
+    }
+  }
+
   sessionStorage.setItem(
     'union-booking-prefill',
     JSON.stringify({
@@ -139,6 +171,9 @@ function confirmBooking() {
             placeholder="e.g. career direction, managing stress…"
           />
         </div>
+        <p v-if="bookingErr" style="margin-top: 14px; font-size: 13px; color: var(--bad); text-align: center">
+          {{ bookingErr }}
+        </p>
         <button
           class="btn btn-primary btn-block btn-lg"
           style="margin-top: 22px"

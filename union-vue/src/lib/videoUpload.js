@@ -79,6 +79,9 @@ export async function uploadIntroVideoToStorage(file) {
   if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
     return { error: 'Зөвхөн MP4 эсвэл WebM видео сонгоно уу.' }
   }
+  if (file.size > MAX_VIDEO_BYTES) {
+    return { error: 'Видеоны хэмжээ 2 GB-аас хэтрэхгүй байх ёстой.' }
+  }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp4'
   const path = `intro/commercial.${ext}`
   const { error } = await supabase.storage

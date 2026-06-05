@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { supabase } from '@/lib/supabase.js'
 import UiIcon from '@/components/common/UiIcon.vue'
 import UiAvatar from '@/components/common/UiAvatar.vue'
@@ -18,13 +18,14 @@ const statsData = ref([
   { icon: 'users', hue: 'var(--gold)', tint: 'var(--gold-tint)', value: '—', label: 'Идэвхтэй гишүүд', foot: '' },
 ])
 
+watch(() => props.pending, (n) => { statsData.value[0].value = n }, { immediate: true })
+
 onMounted(async () => {
   const [{ count: vCount }, { count: tCount }, { count: uCount }] = await Promise.all([
     supabase.from('video_lessons').select('id', { count: 'exact', head: true }).eq('is_published', true),
     supabase.from('psychology_tests').select('id', { count: 'exact', head: true }).eq('is_published', true),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'active'),
   ])
-  statsData.value[0].value = props.pending
   statsData.value[1].value = vCount ?? 0
   statsData.value[2].value = tCount ?? 0
   statsData.value[3].value = uCount ?? 0

@@ -7,7 +7,7 @@ function nextWeekdays() {
   while (days.length < 10) {
     const dow = d.getDay()
     if (dow !== 0 && dow !== 6) {
-      days.push({ d: dayNames[dow], n: d.getDate(), unavail: false })
+      days.push({ d: dayNames[dow], n: d.getDate(), iso: d.toISOString().split('T')[0], unavail: false })
     }
     d.setDate(d.getDate() + 1)
   }

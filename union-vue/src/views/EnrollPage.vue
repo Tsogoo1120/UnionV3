@@ -198,6 +198,8 @@ async function submitPayment() {
       amount: finalPrice.value,
       currency: 'MNT',
       status: 'pending',
+      service_type: selectedService.value.id,
+      bank_reference: 'TU-' + (form.value.name.split(' ')[0]?.toUpperCase() || 'GUEST'),
     })
     .select('id')
     .single()
@@ -568,7 +570,7 @@ const serviceIcons = { subscription: 'book', tarot: 'star', coaching: 'heart' }
                 cursor: day.unavail ? 'not-allowed' : 'pointer',
                 opacity: day.unavail ? 0.5 : 1,
               }"
-              @click="bookDate = day"
+              @click="bookDate = day; bookSlot = null"
             >
               <span style="font-size: 10.5px; font-weight: 600; opacity: 0.7">{{ day.d }}</span>
               <span style="font-size: 18px; font-family: var(--serif); font-weight: 600">{{ day.n }}</span>
