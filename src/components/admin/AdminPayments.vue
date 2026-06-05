@@ -29,7 +29,7 @@ async function loadPayments() {
   const { data, error } = await supabase
     .from('payments')
     .select('*, profiles(full_name, email, phone, avatar_url, subscription_status, subscription_expires_at)')
-    .order('created_at', { ascending: false })
+    .order('submitted_at', { ascending: false })
 
   if (!error && data) {
     list.value = data
@@ -78,7 +78,7 @@ const enrollmentRows = computed(() => {
     ['Үйлчилгээ', 'Subscription'],
     ['Дүн', fmtMNT(p.amount)],
     ['Лавлагаа', p.bank_reference || '—'],
-    ['Илгээсэн', fmtDate(p.created_at)],
+    ['Илгээсэн', fmtDate(p.submitted_at)],
     ['Утас', profile?.phone || '—'],
     ['Хэрэглэгчийн статус', profile?.subscription_status || '—'],
   ]
@@ -227,7 +227,7 @@ async function denyPayment() {
             <span :class="'chip ' + (stat[p.status]?.c || 'warn')" style="font-size: 11px; padding: 2px 8px">
               {{ stat[p.status]?.t || p.status }}
             </span>
-            <span class="muted" style="font-size: 11.5px">{{ fmtDate(p.created_at) }}</span>
+            <span class="muted" style="font-size: 11.5px">{{ fmtDate(p.submitted_at) }}</span>
           </div>
         </div>
       </button>

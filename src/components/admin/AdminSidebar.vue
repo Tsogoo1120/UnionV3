@@ -18,6 +18,7 @@ const items = [
   ['videos', 'video', 'Видео'],
   ['tests', 'compass', 'Тестүүд'],
   ['community', 'users', 'Community'],
+  ['users', 'user', 'Users'],
 ]
 
 function pick(id) {
