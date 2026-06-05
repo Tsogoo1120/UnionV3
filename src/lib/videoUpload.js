@@ -30,24 +30,34 @@ export async function uploadVideoToR2(file, kind, aspect, sessionToken) {
   if (file.size > MAX_VIDEO_BYTES) {
     return { error: 'Видеоны хэмжээ 2 GB-аас хэтрэхгүй байх ёстой.' }
   }
-  const presignRes = await fetch(`${SERVER_URL}/api/r2/presign-upload`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionToken}`,
-    },
-    body: JSON.stringify({ filename: file.name, contentType: file.type, kind, aspect }),
-  })
+  let presignRes
+  try {
+    presignRes = await fetch(`${SERVER_URL}/api/r2/presign-upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ filename: file.name, contentType: file.type, kind, aspect }),
+    })
+  } catch (err) {
+    return { error: `Серверт холбогдож чадсангүй: ${err.message}` }
+  }
   if (!presignRes.ok) {
-    const txt = await presignRes.text()
+    const txt = await presignRes.text().catch(() => '')
     return { error: `Видео бэлтгэхэд алдаа: ${presignRes.status} ${txt}` }
   }
   const { key, uploadUrl } = await presignRes.json()
-  const putRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  })
+  let putRes
+  try {
+    putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    })
+  } catch (err) {
+    return { error: `Видео байршуулахад алдаа: ${err.message}` }
+  }
   if (!putRes.ok) {
     return { error: `Видео байршуулахад алдаа: ${putRes.status}` }
   }

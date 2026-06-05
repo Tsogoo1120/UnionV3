@@ -43,6 +43,40 @@ const weekLabel = computed(() => {
 })
 
 const slots = ref([])
+const showAddSlot = ref(false)
+const newSlotDate = ref('')
+const newSlotStart = ref(9)
+const newSlotEnd = ref(10)
+const newSlotType = ref('coaching')
+const newSlotDesc = ref('')
+
+async function openAddSlot() {
+  const today = new Date()
+  newSlotDate.value = today.toISOString().split('T')[0]
+  newSlotStart.value = 9
+  newSlotEnd.value = 10
+  newSlotType.value = 'coaching'
+  newSlotDesc.value = ''
+  showAddSlot.value = true
+}
+
+async function createSlot() {
+  if (!newSlotDate.value || newSlotEnd.value <= newSlotStart.value) return
+  const [y, m, d] = newSlotDate.value.split('-').map(Number)
+  const start = new Date(y, m - 1, d, newSlotStart.value, 0, 0)
+  const end = new Date(y, m - 1, d, newSlotEnd.value, 0, 0)
+  await supabase.from('coaching_slots').insert({
+    start_at: start.toISOString(),
+    end_at: end.toISOString(),
+    service_type: newSlotType.value,
+    description: newSlotDesc.value || null,
+    status: 'available',
+  })
+  showAddSlot.value = false
+  // Navigate week view to the created slot's week
+  weekStart.value = getMondayOf(new Date(y, m - 1, d))
+  loadSlots()
+}
 
 async function loadSlots() {
   const start = weekStart.value.toISOString()
@@ -153,7 +187,8 @@ onMounted(() => { loadAvailability(); loadSlots() })
           </span>
           Show availability
         </button>
-        <button class="btn btn-primary btn-sm" @click="openModal"><UiIcon name="plus" :size="16" /> Set availability</button>
+        <button class="btn btn-soft btn-sm" @click="openModal"><UiIcon name="plus" :size="16" /> Set availability</button>
+        <button class="btn btn-primary btn-sm" @click="openAddSlot"><UiIcon name="plus" :size="16" /> Add slot</button>
       </div>
     </div>
 
@@ -234,6 +269,63 @@ onMounted(() => { loadAvailability(); loadSlots() })
       </div>
     </div>
   </div>
+
+  <!-- Add Slot Modal -->
+  <Teleport to="body">
+    <div v-if="showAddSlot" class="modal-scrim" @click="showAddSlot = false">
+      <div
+        class="card pop"
+        style="width: 400px; max-width: 94vw; border-radius: 20px; overflow: hidden; box-shadow: var(--sh-lg)"
+        @click.stop
+      >
+        <div style="padding: 22px 26px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between">
+          <div style="font-weight: 600; font-size: 16px">Add coaching slot</div>
+          <button class="btn btn-quiet" style="padding: 8px" @click="showAddSlot = false">
+            <UiIcon name="x" :size="18" />
+          </button>
+        </div>
+        <div style="padding: 26px; display: flex; flex-direction: column; gap: 18px">
+          <div class="field">
+            <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Date</label>
+            <input v-model="newSlotDate" type="date" class="input" style="font-size: 14px" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+            <div class="field">
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Start time</label>
+              <select v-model.number="newSlotStart" class="input" style="font-size: 14px">
+                <option v-for="h in HOUR_OPTS.slice(0, -1)" :key="h" :value="h">{{ fmt(h) }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">End time</label>
+              <select v-model.number="newSlotEnd" class="input" style="font-size: 14px">
+                <option v-for="h in HOUR_OPTS.slice(1)" :key="h" :value="h">{{ fmt(h) }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Service type</label>
+            <select v-model="newSlotType" class="input" style="font-size: 14px">
+              <option value="coaching">1:1 Coaching</option>
+              <option value="tarot_reading">Тарот уншлага</option>
+            </select>
+          </div>
+          <div class="field">
+            <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Description <span style="font-weight: 400; opacity: 0.6">(optional)</span></label>
+            <input v-model="newSlotDesc" class="input" placeholder="e.g. Career coaching session" style="font-size: 14px" />
+          </div>
+          <p v-if="newSlotEnd <= newSlotStart" style="font-size: 13px; color: var(--warn); margin: 0">End time must be after start time.</p>
+          <button
+            class="btn btn-primary btn-block"
+            :disabled="!newSlotDate || newSlotEnd <= newSlotStart"
+            @click="createSlot"
+          >
+            Create slot
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 
   <!-- Set Availability Modal -->
   <Teleport to="body">

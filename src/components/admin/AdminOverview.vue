@@ -16,18 +16,22 @@ const statsData = ref([
   { icon: 'video', hue: 'var(--primary)', tint: 'var(--primary-tint)', value: '—', label: 'Нийтэлсэн хичээлүүд', foot: '' },
   { icon: 'compass', hue: 'var(--sage-deep)', tint: 'var(--sage-tint)', value: '—', label: 'Нийтэлсэн тестүүд', foot: '' },
   { icon: 'users', hue: 'var(--gold)', tint: 'var(--gold-tint)', value: '—', label: 'Идэвхтэй гишүүд', foot: '' },
+  { icon: 'bank', hue: 'var(--good)', tint: 'var(--good-tint)', value: '—', label: 'Нийт орлого', foot: 'Батлагдсан төлбөрүүд' },
 ])
 
 onMounted(async () => {
-  const [{ count: vCount }, { count: tCount }, { count: uCount }] = await Promise.all([
+  const [{ count: vCount }, { count: tCount }, { count: uCount }, { data: pData }] = await Promise.all([
     supabase.from('video_lessons').select('id', { count: 'exact', head: true }).eq('is_published', true),
     supabase.from('psychology_tests').select('id', { count: 'exact', head: true }).eq('is_published', true),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('subscription_status', 'active'),
+    supabase.from('payments').select('amount').eq('status', 'approved'),
   ])
+  const totalRevenue = (pData ?? []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   statsData.value[0].value = props.pending
   statsData.value[1].value = vCount ?? 0
   statsData.value[2].value = tCount ?? 0
   statsData.value[3].value = uCount ?? 0
+  statsData.value[4].value = totalRevenue.toLocaleString('mn-MN') + ' ₮'
 
   const { data } = await supabase
     .from('coaching_slots')

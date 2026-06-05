@@ -13,6 +13,7 @@ const { session, profile, init, isAdmin } = useAuth()
 
 const screen = ref(localStorage.getItem('union-screen') || 'landing')
 function nav(s) {
+  if (s === 'admin' && !isAdmin()) return
   screen.value = s
   localStorage.setItem('union-screen', s)
   window.scrollTo(0, 0)

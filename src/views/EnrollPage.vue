@@ -210,7 +210,7 @@ async function submitPayment() {
   }
 
   // Flip profile to pending (SECURITY DEFINER RPC, non-fatal if fails)
-  await supabase.rpc('submit_payment_flip_pending').catch(() => {})
+  try { await supabase.rpc('submit_payment_flip_pending') } catch {}
 
   // Fire-and-forget emails — failures must not block the user
   if (paymentRow?.id) {
