@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed } from "vue";
-import { stats } from "@/data/union.js";
 import {
   calDays,
   calSlots,
@@ -62,13 +61,7 @@ function onPrimaryClick() {
   goEnrollPayment();
 }
 
-const metrics = [
-  [stats.students, "learners"],
 
-  [stats.completion, "finish their path"],
-
-  [stats.rating + "★", "avg. rating"],
-];
 </script>
 
 <template>

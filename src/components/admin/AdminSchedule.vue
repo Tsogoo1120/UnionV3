@@ -1,18 +1,46 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import UiIcon from '@/components/common/UiIcon.vue'
 
 const avail = ref(true)
 const appts = []
+const showSetAvail = ref(false)
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 const HH = 58
-const windows = {}
+const windows = reactive({})
+
+const HOUR_OPTS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+
+const modalDay = ref('Mon')
+const modalStart = ref(9)
+const modalEnd = ref(17)
+
+function openModal() {
+  modalDay.value = 'Mon'
+  modalStart.value = 9
+  modalEnd.value = 17
+  showSetAvail.value = true
+}
+
+function saveAvail() {
+  if (modalEnd.value <= modalStart.value) return
+  windows[modalDay.value] = [modalStart.value, modalEnd.value]
+  showSetAvail.value = false
+}
+
+function clearAvail(day) {
+  delete windows[day]
+}
 
 const dayOf = (a) => a.date.split(' ')[0]
 const startH = (a) => parseInt(a.time.split(':')[0]) + (a.time.split(':')[1] === '30' ? 0.5 : 0)
 const apptsFor = (d) => appts.filter((a) => dayOf(a) === d)
+
+function fmt(h) {
+  return h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`
+}
 </script>
 
 <template>
@@ -37,7 +65,7 @@ const apptsFor = (d) => appts.filter((a) => dayOf(a) === d)
           </span>
           Show availability
         </button>
-        <button class="btn btn-primary btn-sm"><UiIcon name="plus" :size="16" /> Set availability</button>
+        <button class="btn btn-primary btn-sm" @click="openModal"><UiIcon name="plus" :size="16" /> Set availability</button>
       </div>
     </div>
 
@@ -52,6 +80,14 @@ const apptsFor = (d) => appts.filter((a) => dayOf(a) === d)
         >
           <div class="muted" style="font-size: 12px; font-weight: 600">{{ d }}</div>
           <div style="font-family: var(--serif); font-weight: 700; font-size: 19px">{{ i + 1 }}</div>
+          <button
+            v-if="windows[d]"
+            class="btn btn-quiet"
+            style="font-size: 11px; padding: 2px 7px; margin-top: 4px; color: var(--sage-deep)"
+            @click="clearAvail(d)"
+          >
+            {{ windows[d][0] }}–{{ windows[d][1] }}h ×
+          </button>
         </div>
 
         <!-- time gutter -->
@@ -107,4 +143,84 @@ const apptsFor = (d) => appts.filter((a) => dayOf(a) === d)
       </div>
     </div>
   </div>
+
+  <!-- Set Availability Modal -->
+  <Teleport to="body">
+    <div v-if="showSetAvail" class="modal-scrim" @click="showSetAvail = false">
+      <div
+        class="card pop"
+        style="width: 380px; max-width: 94vw; border-radius: 20px; overflow: hidden; box-shadow: var(--sh-lg)"
+        @click.stop
+      >
+        <div style="padding: 22px 26px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between">
+          <div style="font-weight: 600; font-size: 16px">Set availability</div>
+          <button class="btn btn-quiet" style="padding: 8px" @click="showSetAvail = false">
+            <UiIcon name="x" :size="18" />
+          </button>
+        </div>
+
+        <div style="padding: 26px; display: flex; flex-direction: column; gap: 20px">
+          <!-- Day -->
+          <div>
+            <div class="kicker" style="margin-bottom: 10px">Day</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <button
+                v-for="d in DAYS"
+                :key="d"
+                class="btn btn-sm"
+                :style="{
+                  background: modalDay === d ? 'var(--primary)' : 'var(--surface-2)',
+                  color: modalDay === d ? '#fff' : 'var(--ink)',
+                  border: 'none',
+                  fontWeight: 600,
+                }"
+                @click="modalDay = d"
+              >{{ d }}</button>
+            </div>
+          </div>
+
+          <!-- Time range -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+            <div class="field">
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Start time</label>
+              <select v-model.number="modalStart" class="input" style="font-size: 14px">
+                <option v-for="h in HOUR_OPTS.slice(0, -1)" :key="h" :value="h">{{ fmt(h) }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">End time</label>
+              <select v-model.number="modalEnd" class="input" style="font-size: 14px">
+                <option v-for="h in HOUR_OPTS.slice(1)" :key="h" :value="h">{{ fmt(h) }}</option>
+              </select>
+            </div>
+          </div>
+
+          <p v-if="modalEnd <= modalStart" style="font-size: 13px; color: var(--warn); margin: 0">End time must be after start time.</p>
+
+          <button
+            class="btn btn-primary btn-block"
+            :disabled="modalEnd <= modalStart"
+            @click="saveAvail"
+          >
+            Save availability
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
+
+<style scoped>
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(11, 24, 30, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade 0.25s ease both;
+}
+</style>

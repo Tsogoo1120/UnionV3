@@ -189,7 +189,7 @@ export const introVideo = {
   caption: 'Танилцуулга бичлэгээс дэлгэрэнгүй мэдээлэл аваарай',
   highlights: [
     'Spirituality сэдвүүд болон филисофи чиглэлүүдээр хичээлүүд',
-    'Өдөр болгоны дасгал ажлууд',
+    'Community хэсэгт өөрсдийнхөө туршлагыг хуваалцах боломжтой',
     '7 хоног болгон psycology tests',
   ],
 }
@@ -200,7 +200,6 @@ export const instructor = {
   bio: 'Надтай цаг товлож холбогдсоноор таны нөхцөл байдлын гаргалгааг хамтдаа тодорхойлж чиглэл олох талаас хамтран ажиллах болно',
 }
 
-export const stats = { students: '14,200+', completion: '88%', countries: 47, rating: 4.9 }
 
 // Course prices keyed by id (was inlined in the enroll flow).
 export const coursePrices = { foundations: 149, eq: 129, resilience: 119, clarity: 139 }
@@ -333,7 +332,6 @@ export default {
   challengeDays,
   instructor,
   introVideo,
-  stats,
   coursePrices,
   currentStudent,
   journeyPosts,
