@@ -1,28 +1,81 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import UiIcon from '@/components/common/UiIcon.vue'
 import { supabase } from '@/lib/supabase.js'
 
 const avail = ref(true)
-const appts = []
 const showSetAvail = ref(false)
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 const HH = 58
+
 const windows = reactive({})
 
 const HOUR_OPTS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-
 const modalDay = ref('Mon')
 const modalStart = ref(9)
 const modalEnd = ref(17)
+
+function getMondayOf(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+const weekStart = ref(getMondayOf(new Date()))
+
+const weekDates = computed(() => {
+  return DAYS.map((_, i) => {
+    const d = new Date(weekStart.value)
+    d.setDate(d.getDate() + i)
+    return d
+  })
+})
+
+const weekLabel = computed(() => {
+  const s = weekDates.value[0]
+  const e = weekDates.value[4]
+  const mo = { month: 'short', day: 'numeric' }
+  return s.toLocaleDateString('en-US', mo) + ' – ' + e.toLocaleDateString('en-US', { ...mo, year: 'numeric' })
+})
+
+const slots = ref([])
+
+async function loadSlots() {
+  const start = weekStart.value.toISOString()
+  const end = new Date(weekStart.value.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data } = await supabase
+    .from('coaching_slots')
+    .select('id, start_at, end_at, description, status, service_type')
+    .in('status', ['available', 'pending', 'booked'])
+    .gte('start_at', start)
+    .lt('start_at', end)
+    .order('start_at', { ascending: true })
+  slots.value = data ?? []
+}
 
 async function loadAvailability() {
   const { data } = await supabase.from('mentor_availability').select('day, start_hour, end_hour')
   if (data) {
     for (const row of data) windows[row.day] = [row.start_hour, row.end_hour]
   }
+}
+
+function prevWeek() {
+  const d = new Date(weekStart.value)
+  d.setDate(d.getDate() - 7)
+  weekStart.value = d
+  loadSlots()
+}
+
+function nextWeek() {
+  const d = new Date(weekStart.value)
+  d.setDate(d.getDate() + 7)
+  weekStart.value = d
+  loadSlots()
 }
 
 function openModal() {
@@ -48,15 +101,34 @@ async function clearAvail(day) {
   await supabase.from('mentor_availability').delete().eq('day', day)
 }
 
-onMounted(loadAvailability)
+function slotsForDay(dayIndex) {
+  const target = weekDates.value[dayIndex]
+  return slots.value.filter(s => {
+    const d = new Date(s.start_at)
+    return d.getFullYear() === target.getFullYear() &&
+           d.getMonth() === target.getMonth() &&
+           d.getDate() === target.getDate()
+  })
+}
 
-const dayOf = (a) => a.date.split(' ')[0]
-const startH = (a) => parseInt(a.time.split(':')[0]) + (a.time.split(':')[1] === '30' ? 0.5 : 0)
-const apptsFor = (d) => appts.filter((a) => dayOf(a) === d)
+function slotStartH(slot) {
+  const d = new Date(slot.start_at)
+  return d.getHours() + d.getMinutes() / 60
+}
+
+function slotDurMin(slot) {
+  return (new Date(slot.end_at) - new Date(slot.start_at)) / 60000
+}
+
+function slotLabel(slot) {
+  return slot.service_type === 'tarot_reading' ? 'Тарот' : '1:1 Coaching'
+}
 
 function fmt(h) {
   return h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`
 }
+
+onMounted(() => { loadAvailability(); loadSlots() })
 </script>
 
 <template>
@@ -66,9 +138,9 @@ function fmt(h) {
       style="padding: 16px 36px; border-bottom: 1px solid var(--line); background: var(--card)"
     >
       <div class="flex items-center" style="gap: 16px">
-        <button class="btn btn-ghost btn-sm" style="padding: 9px"><UiIcon name="chevLeft" :size="17" /></button>
-        <div style="font-weight: 600; font-size: 15.5px">Jun 1 – 5, 2026</div>
-        <button class="btn btn-ghost btn-sm" style="padding: 9px"><UiIcon name="chevRight" :size="17" /></button>
+        <button class="btn btn-ghost btn-sm" style="padding: 9px" @click="prevWeek"><UiIcon name="chevLeft" :size="17" /></button>
+        <div style="font-weight: 600; font-size: 15.5px">{{ weekLabel }}</div>
+        <button class="btn btn-ghost btn-sm" style="padding: 9px" @click="nextWeek"><UiIcon name="chevRight" :size="17" /></button>
       </div>
       <div class="flex items-center" style="gap: 12px">
         <button
@@ -95,7 +167,7 @@ function fmt(h) {
           style="padding: 12px 0; text-align: center; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 3"
         >
           <div class="muted" style="font-size: 12px; font-weight: 600">{{ d }}</div>
-          <div style="font-family: var(--serif); font-weight: 700; font-size: 19px">{{ i + 1 }}</div>
+          <div style="font-family: var(--serif); font-weight: 700; font-size: 19px">{{ weekDates[i].getDate() }}</div>
           <button
             v-if="windows[d]"
             class="btn btn-quiet"
@@ -114,8 +186,9 @@ function fmt(h) {
         </div>
 
         <!-- day columns -->
-        <div v-for="d in DAYS" :key="d" style="border-right: 1px solid var(--line); position: relative">
+        <div v-for="(d, di) in DAYS" :key="d" style="border-right: 1px solid var(--line); position: relative">
           <div v-for="h in HOURS" :key="h" :style="{ height: HH + 'px', borderBottom: '1px solid var(--line-soft)' }" />
+
           <!-- availability band -->
           <div
             v-if="avail && windows[d]"
@@ -132,28 +205,30 @@ function fmt(h) {
               pointerEvents: 'none',
             }"
           />
-          <!-- appointments -->
+
+          <!-- coaching slots -->
           <div
-            v-for="a in apptsFor(d)"
-            :key="a.id"
+            v-for="s in slotsForDay(di)"
+            :key="s.id"
             :style="{
               position: 'absolute',
               left: '5px',
               right: '5px',
-              top: (startH(a) - 8) * HH + 2 + 'px',
-              height: (a.dur / 60) * HH - 4 + 'px',
-              background: a.status === 'pending' ? 'var(--warn-tint)' : 'var(--primary)',
-              color: a.status === 'pending' ? 'var(--warn)' : '#fff',
+              top: (slotStartH(s) - 8) * HH + 2 + 'px',
+              height: Math.max((slotDurMin(s) / 60) * HH - 4, 22) + 'px',
+              background: s.status === 'pending' ? 'var(--warn-tint)' : s.status === 'booked' ? 'var(--primary)' : 'var(--surface-3)',
+              color: s.status === 'pending' ? 'var(--warn)' : s.status === 'booked' ? '#fff' : 'var(--ink-soft)',
               borderRadius: '9px',
-              padding: '7px 9px',
+              padding: '5px 9px',
               overflow: 'hidden',
               boxShadow: 'var(--sh-sm)',
               cursor: 'pointer',
-              borderLeft: a.status === 'pending' ? '3px solid var(--warn)' : '3px solid var(--primary-deep)',
+              borderLeft: s.status === 'pending' ? '3px solid var(--warn)' : s.status === 'booked' ? '3px solid var(--primary-deep)' : '3px solid var(--line)',
+              fontSize: '12px',
             }"
           >
-            <div style="font-weight: 600; font-size: 12.5px; line-height: 1.2">{{ a.name }}</div>
-            <div :style="{ fontSize: '11px', opacity: a.status === 'pending' ? 1 : 0.85 }">{{ a.time }} · {{ a.topic }}</div>
+            <div style="font-weight: 600; line-height: 1.2">{{ slotLabel(s) }}</div>
+            <div style="opacity: 0.75; font-size: 11px">{{ s.status }}</div>
           </div>
         </div>
       </div>
@@ -176,7 +251,6 @@ function fmt(h) {
         </div>
 
         <div style="padding: 26px; display: flex; flex-direction: column; gap: 20px">
-          <!-- Day -->
           <div>
             <div class="kicker" style="margin-bottom: 10px">Day</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap">
@@ -195,7 +269,6 @@ function fmt(h) {
             </div>
           </div>
 
-          <!-- Time range -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
             <div class="field">
               <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block">Start time</label>

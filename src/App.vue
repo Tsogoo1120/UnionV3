@@ -9,7 +9,7 @@ import StudentApp from '@/views/StudentApp.vue'
 import AdminApp from '@/views/AdminApp.vue'
 
 const { tweaks, setTweak } = useTweaks()
-const { session, profile, init } = useAuth()
+const { session, profile, init, isAdmin } = useAuth()
 
 const screen = ref(localStorage.getItem('union-screen') || 'landing')
 function nav(s) {
@@ -42,8 +42,12 @@ onMounted(async () => {
     try {
       const parsed = JSON.parse(postOAuth)
       if (parsed.intent === 'login') {
-        // Login flow: route based on subscription status
-        nav(profile.value?.subscription_status === 'active' ? 'student' : 'enroll')
+        // Login flow: admin gets admin panel, others route by subscription
+        if (isAdmin()) {
+          nav('admin')
+        } else {
+          nav(profile.value?.subscription_status === 'active' ? 'student' : 'enroll')
+        }
       } else {
         // Enroll flow: restore service + step
         sessionStorage.setItem('union-enroll-intent', postOAuth)

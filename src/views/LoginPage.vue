@@ -5,7 +5,7 @@ import UiLogo from '@/components/common/UiLogo.vue'
 import UiIcon from '@/components/common/UiIcon.vue'
 
 const emit = defineEmits(['nav'])
-const { session, profile, loading, signInWithGoogle } = useAuth()
+const { session, profile, loading, signInWithGoogle, isAdmin } = useAuth()
 
 const isSubscriber = computed(() => profile.value?.subscription_status === 'active')
 
@@ -13,7 +13,11 @@ watch(
   [loading, session],
   () => {
     if (!loading.value && session.value) {
-      emit('nav', isSubscriber.value ? 'student' : 'enroll')
+      if (isAdmin()) {
+        emit('nav', 'admin')
+      } else {
+        emit('nav', isSubscriber.value ? 'student' : 'enroll')
+      }
     }
   },
   { immediate: true },

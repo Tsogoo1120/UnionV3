@@ -71,6 +71,13 @@ async function updateProfile(data) {
   return { error }
 }
 
+const ADMIN_EMAIL = 'altancog@gmail.com'
+
+function isAdmin() {
+  const email = session.value?.user?.email
+  return email === ADMIN_EMAIL || profile.value?.role === 'admin' || profile.value?.is_admin === true
+}
+
 export function useAuth() {
   return {
     session: readonly(session),
@@ -81,5 +88,6 @@ export function useAuth() {
     signInWithGoogle,
     signOut,
     updateProfile,
+    isAdmin,
   }
 }
